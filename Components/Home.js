@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     StyleSheet,
     Text,
@@ -12,55 +13,12 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { makeAuthenticatedRequest } from './TokenMangement';
 import { useNavigation } from '@react-navigation/native'; // 
-
+import axiosInstance from './TokenMangement';
 export default function Home() {
-    const [username, setUsername] = useState('Ibrahim'); 
-    const [points, setPoints] = useState(100); 
-    const [offers, setOffers] = useState([
-        {
-            id: 1,
-            title: "Discount on Electronics",
-            description: "Get up to 20% off on electronics.",
-            image: "../assets/yellow-paper-note-with-text-special-offer-D38FDP.jpg",
-            pointsRequired: 200,
-        },
-        {
-            id: 2,
-            title: "Free Coffee",
-            description: "Redeem a free coffee at your favorite café.",
-            image: "../assets/yellow-paper-note-with-text-special-offer-D38FDP.jpg",
-            pointsRequired: 50,
-        },
-        {
-            id: 3,
-            title: "Movie Tickets",
-            description: "Enjoy a movie night with 2 tickets.",
-            image: "https://via.placeholder.com/150",
-            pointsRequired: 150,
-        },
-    ]);
-    const [transactions, setTransactions] = useState([
-        {
-            id: 1,
-            description: "Redeemed 1 free coffee",
-            points: -50, // Negative because points are deducted
-        },
-        {
-            id: 2,
-            description: "Earned points from purchase",
-            points: 100, // Positive because points are earned
-        },
-        {
-            id: 3,
-            description: "Redeemed 2 movie tickets",
-            points: -150, // Negative because points are redeemed
-        },
-        {
-            id: 4,
-            description: "Earned points from referral",
-            points: 200, // Positive because points are earned
-        },
-    ]); 
+    const [username, setUsername] = useState(''); 
+    const [points, setPoints] = useState(); 
+    const [offers, setOffers] = useState([]);
+    const [transactions, setTransactions] = useState([]); 
     const [activeTab, setActiveTab] = useState('home');
     const [loading, setLoading] = useState(false); // Loading state
 
@@ -73,9 +31,11 @@ export default function Home() {
     const fetchUserData = async () => {
         setLoading(true);
         try {
-            const data = await makeAuthenticatedRequest('https://api.example.com/transactions');
-            setUsername(data.username);
-            setPoints(data.points)
+            console.log('fetching user data');
+            const data = await axiosInstance.get('/employee');
+            setUsername(data.data[0].firstname);
+            setPoints(data.data[0].points);
+            console.log(data.data[0].firstname);
         } catch (error) {
             Alert.alert('Error', 'Failed to fetch user Data.');
         } finally {
@@ -86,8 +46,9 @@ export default function Home() {
     const fetchOffers = async () => {
         setLoading(true);
         try {
-            const data = await makeAuthenticatedRequest('https://api.example.com/transactions');
-            setOffers(data);
+            const data = await axiosInstance.get('/api/offers');
+            setOffers(data.data);
+            console.log(data.data[0]);
         } catch (error) {
             Alert.alert('Error', 'Failed to fetch Offers.');
         } finally {
@@ -96,15 +57,15 @@ export default function Home() {
     };
 
     const fetchTransactions = async () => {
-        setLoading(true);
-        try {
-            const data = await makeAuthenticatedRequest('https://api.example.com/transactions');
-            setTransactions(data);
-        } catch (error) {
-            Alert.alert('Error', 'Failed to fetch transactions.');
-        } finally {
-            setLoading(false);
-        }
+        // setLoading(true);
+        // try {
+        //     const data = await makeAuthenticatedRequest('https://api.example.com/transactions');
+        //     setTransactions(data);
+        // } catch (error) {
+        //     Alert.alert('Error', 'Failed to fetch transactions.');
+        // } finally {
+        //     setLoading(false);
+        // }
     };
     const handleSignOut = () => {
         // Show a confirmation dialog before signing out
@@ -114,9 +75,18 @@ export default function Home() {
                 text: 'Sign Out', 
                 onPress: async () => {
                     try {
+                        const refreshToken = await AsyncStorage.getItem('refreshToken');
+                        console.log('Signing out...');
+                        const response = await axiosInstance.delete('/admin/logout', {
+                            data: { token: refreshToken },
+                        });
+
+                        if (response.status === 200) {
+                            await AsyncStorage.removeItem('accessToken');
+                            await AsyncStorage.removeItem('refreshToken');
+                        }
                         // Remove the access token and refresh token from AsyncStorage
-                        await AsyncStorage.removeItem('accessToken');
-                        await AsyncStorage.removeItem('refreshToken');
+
     
                         // Navigate the user to the login screen
                         navigation.navigate('Login');
@@ -168,18 +138,33 @@ export default function Home() {
             setLoading(false);
         }
     };
-
-    const renderOffer = ({ item }) => (
-        <TouchableOpacity onPress={() => handleOfferSelect(item)} style={styles.offerCard}>
-            <Image source={{ uri: item.image }} style={styles.offerImage} />
-            <View style={styles.offerDetails}>
-                <Text style={styles.offerTitle}>{item.title}</Text>
-                <Text style={styles.offerDescription}>{item.description}</Text>
-                <Text style={styles.offerPoints}>Points Required: {item.pointsRequired}</Text>
-            </View>
-        </TouchableOpacity>
-    );
-
+    const BASE_URL = "http://192.168.1.4:3000";
+    // const renderOffer = ({ item }) => (
+    //     <TouchableOpacity onPress={() => handleOfferSelect(item)} style={styles.offerCard}>
+    //         <Image source={{ uri: `${BASE_URL}${item.imageUrl}` }} style={styles.offerImage} />
+    //         <View style={styles.offerDetails}>
+    //             <Text style={styles.offerTitle}>{item.title}</Text>
+    //             <Text style={styles.offerDescription}>{item.description}</Text>
+    //             <Text style={styles.offerPoints}>Points Required: {item.pointsRequired}</Text>
+    //         </View>
+    //     </TouchableOpacity>
+    // );
+    const renderOffer = ({ item }) => {
+        const url = item.imageUrl;
+        console.log('Image URL:', url); // Log the image URL
+        const imageUrl = `${BASE_URL}${url}`;
+        console.log('Image URL:', imageUrl); // Log the full image URL
+        return (
+            <TouchableOpacity onPress={() => handleOfferSelect(item)} style={styles.offerCard}>
+                <Image source={{ uri: `${imageUrl}` }} style={styles.offerImage} />
+                <View style={styles.offerDetails}>
+                    <Text style={styles.offerTitle}>{item.title}</Text>
+                    <Text style={styles.offerDescription}>{item.description}</Text>
+                    <Text style={styles.offerPoints}>Points Required: {item.pointsRequired}</Text>
+                </View>
+            </TouchableOpacity>
+        );
+    };
     const renderTransaction = ({ item }) => (
         <View style={styles.transactionCard}>
             <Text style={styles.transactionText}>{item.description}</Text>
@@ -214,7 +199,7 @@ export default function Home() {
                                 <Text style={styles.offersHeading}>Offers</Text>
                                 <FlatList
                                     data={offers}
-                                    keyExtractor={(item) => item.id.toString()}
+                                    keyExtractor={(item) => item.id}
                                     renderItem={renderOffer}
                                 />
                             </View>
@@ -226,7 +211,7 @@ export default function Home() {
                             <Text style={styles.transactionsHeading}>Transactions</Text>
                             <FlatList
                                 data={transactions}
-                                keyExtractor={(item) => item.id.toString()}
+                                keyExtractor={(item) => item.id}
                                 renderItem={renderTransaction}
                             />
                         </View>

@@ -3,15 +3,22 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, Alert, TextInput, Image, TouchableOpacity, Pressable, SafeAreaView, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';  // Import AsyncStorage
+import axios from 'axios';
+import axiosInstance from './TokenMangement';
+import { useNavigation } from '@react-navigation/native';
 
 export default function Login({ navigation }) {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
+    const [userName, setUserName] = useState("");
+    const [password, setPassword] = useState("");
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [loading, setLoading] = useState(false); // Loading state for the API request
+    // console.log('Navigation Prop:', navigation);
 
-    const handleBtn = async () => {
-        if (!username.trim() || !password.trim()) {
+    
+    const handleBtn = async (e) => {
+        
+        e.preventDefault();
+        if (!userName.trim() || !password.trim()) {
             Alert.alert('Error', 'Username or Password cannot be empty');
             return;
         }
@@ -19,28 +26,34 @@ export default function Login({ navigation }) {
         setLoading(true); // Start loading indicator
 
         try {
-            const response = await fetch('https://api.example.com/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ username, password }),
+            console.log('Logging in...');
+            if (userName) 
+                console.log('Username:', userName);
+            if (password)
+                console.log('password:', password);
+
+            const response = await axios.post('http://192.168.1.4:3000/admin/login', {
+                username: userName,
+                password: password,
+                role: 'emp'
             });
+            // console.log('Response', response);
+            console.log('Navigating to Home:', navigation.navigate);
 
-            const data = await response.json();
+            console.log(response.data);
+            const { accessToken, refreshToken } = response.data;
+            console.log('Navigating to Home:', navigation.navigate);
 
-            if (response.ok) {
-                // Save tokens to AsyncStorage
-                await AsyncStorage.setItem('accessToken', data.accessToken);
-                await AsyncStorage.setItem('refreshToken', data.refreshToken);
+            // Save tokens to AsyncStorage
+            await AsyncStorage.setItem('accessToken', accessToken);
+            await AsyncStorage.setItem('refreshToken', refreshToken);
 
-                Alert.alert('Success', 'Logged in successfully');
-                navigation.navigate('Home');
-            } else {
-                Alert.alert('Error', data.message || 'Login failed');
-            }
-        } catch (error) {
-            Alert.alert('Error', 'An error occurred while logging in.');
+            Alert.alert('Success', 'Logged in successfully');
+            navigation.navigate('Home');
+            } catch (error) {
+                console.log('Error details:', error.toJSON ? error.toJSON() : error);
+                const errorMessage = error.response?.data?.error || error.message || 'An error occurred while logging in.';
+                Alert.alert('Error', errorMessage);
         } finally {
             setLoading(false); // Stop loading indicator
         }
@@ -60,8 +73,8 @@ export default function Login({ navigation }) {
                 <TextInput
                     style={styles.input}
                     placeholder="User Name"
-                    value={username}
-                    onChangeText={setUsername} // Updates username state
+                    value={userName}
+                    onChangeText={setUserName} // Updates username state
                 />
                 <View style={styles.passwordContainer}>
                     <TextInput

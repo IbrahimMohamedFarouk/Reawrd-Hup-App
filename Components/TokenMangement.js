@@ -1,61 +1,59 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Function to refresh the access token using the refresh token
-export const refreshAccessToken = async () => {
-    try {
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from "axios";
+import { jwtDecode } from 'jwt-decode'; // Install with `npm install jwt-decode`
+
+// Create an Axios instance
+const axiosInstance = axios.create({
+    baseURL: "http://192.168.1.4:3000", // Your API base URL
+});
+
+// Add an interceptor to refresh the token
+axiosInstance.interceptors.request.use(
+    async (config) => {
+                            
+        const accessToken = await AsyncStorage.getItem('accessToken');
         const refreshToken = await AsyncStorage.getItem('refreshToken');
 
-        if (!refreshToken) {
-            throw new Error('No refresh token found');
-        }
-
-        const response = await fetch('https://api.example.com/refresh-token', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ refreshToken }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            // Store the new access token
-            await AsyncStorage.setItem('accessToken', data.accessToken);
-            return data.accessToken;
-        } else {
-            throw new Error('Failed to refresh token');
-        }
-    } catch (error) {
-        throw new Error('Session expired. Please log in again.');
-    }
-};
-
-// Function to make authenticated API requests
-export const makeAuthenticatedRequest = async (url) => {
-    try {
-        let accessToken = await AsyncStorage.getItem('accessToken');
-
         if (!accessToken) {
-            throw new Error('No access token found');
+            // No access token, redirect to login
+            navigation.navigate('Login');
+            return Promise.reject(new Error("No access token")); // Reject for clarity
         }
 
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-            },
-        });
+        const decodedToken = jwtDecode(accessToken);
+        const currentTime = Date.now() / 1000;
+        const expire = currentTime - decodedToken.exp;
+        console.log("expires: ", expire);
+        console.log(`decoded Token: ${decodedToken.exp}`);
+        console.log(`current Time: ${currentTime}`);
+        // If the access token is near expiration (e.g., 5 minutes before expiry), refresh it
+        if (expire >= 0) { // Adjust threshold as needed
+            try {
+                const response = await axios.post(
+                        "http://192.168.1.4:3000/admin/refresh-token",
+                        { token: refreshToken }
+                    );
+                    console.log("REFRESH TOKEN RESPONSE", response.data);
+                    const { accessToken: newAccessToken } = response.data;
+                    await AsyncStorage.setItem("accessToken", newAccessToken);
 
-        // If the response is unauthorized (token expired)
-        if (response.status === 401) {
-            accessToken = await refreshAccessToken(); // Get a new token if expired
-            return makeAuthenticatedRequest(url); // Retry the request with the new token
-        }
-
-        return await response.json();
-    } catch (error) {
-        throw new Error('Error during request or session expired');
+                    // Update request headers with the new access token
+                    config.headers["Authorization"] = `Bearer ${newAccessToken}`;
+                } catch (error) {
+                    console.error("Token refresh failed:", error);
+                    await AsyncStorage.clear(); // Clear tokens on refresh failure
+                    navigation.navigate('Login'); // Redirect to login
+                }
+         } else {
+                // Token is still valid (or near expiration but not refreshed)
+                config.headers["Authorization"] = `Bearer ${accessToken}`;
+            }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
     }
-};
+);
 
+export default axiosInstance;
