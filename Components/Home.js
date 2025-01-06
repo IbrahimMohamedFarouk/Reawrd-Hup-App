@@ -9,11 +9,16 @@ import {
     Alert,
     ActivityIndicator,
     Image,
+    TextInput,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { makeAuthenticatedRequest } from './TokenMangement';
 import { useNavigation } from '@react-navigation/native'; // 
 import axiosInstance from './TokenMangement';
+import TransactionsList from './Transactions';
+import QRCodeModal from './GenerateQRCode'
+
+
+
 export default function Home() {
     const [username, setUsername] = useState(''); 
     const [points, setPoints] = useState(); 
@@ -21,6 +26,11 @@ export default function Home() {
     const [transactions, setTransactions] = useState([]); 
     const [activeTab, setActiveTab] = useState('home');
     const [loading, setLoading] = useState(false); // Loading state
+    const [showSettings, setShowSettings] = useState(false); // Toggle settings view
+    const [newUsername, setNewUsername] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [qrCodeUrl, setQrCodeUrl] = useState(null); // State for QR Code
+    const [showQRCodeModal, setShowQRCodeModal] = useState(false); // State for QR code modal
 
     useEffect(() => {
         fetchUserData();
@@ -57,15 +67,32 @@ export default function Home() {
     };
 
     const fetchTransactions = async () => {
-        // setLoading(true);
-        // try {
-        //     const data = await makeAuthenticatedRequest('https://api.example.com/transactions');
-        //     setTransactions(data);
-        // } catch (error) {
-        //     Alert.alert('Error', 'Failed to fetch transactions.');
-        // } finally {
-        //     setLoading(false);
-        // }
+        setLoading(true);
+        try {
+            const data = await makeAuthenticatedRequest('https://api.example.com/transactions');
+            setTransactions(data);
+        } catch (error) {
+            Alert.alert('Error', 'Failed to fetch transactions.');
+        } finally {
+            setLoading(false);
+        }
+    };
+    const handleSaveSettings = async () => {
+        try {
+            const response = await axiosInstance.put('/employee/settings', {
+                username: newUsername || username,
+                password: newPassword,
+            });
+            if (response.status === 200) {
+                Alert.alert('Success', 'Your settings have been updated.');
+                setUsername(newUsername || username); // Update username locally
+                setNewUsername('');
+                setNewPassword('');
+                setShowSettings(false);
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to update settings.');
+        }
     };
     const handleSignOut = () => {
         // Show a confirmation dialog before signing out
@@ -99,7 +126,23 @@ export default function Home() {
             },
         ]);
     };
-
+    const handleGenerateQRCode = async () => {
+        setLoading(true);
+        try {
+            const response = await axiosInstance.get('/api/qrcode', { params: { username } }); // Assuming backend expects username
+            if (response.status === 200 && response.data.qrCodeUrl) {
+                setQrCodeUrl(response.data.qrCodeUrl);
+                setShowQRCodeModal(true); // Show QR code modal
+            } else {
+                Alert.alert('Error', 'Failed to generate QR code.');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to generate QR code.');
+        } finally {
+            setLoading(false);
+        }
+    };
+    
     const handleOfferSelect = (offer) => {
         if (points >= offer.pointsRequired) {
             // Proceed with submitting the offer redemption
@@ -139,21 +182,9 @@ export default function Home() {
         }
     };
     const BASE_URL = "http://192.168.1.4:3000";
-    // const renderOffer = ({ item }) => (
-    //     <TouchableOpacity onPress={() => handleOfferSelect(item)} style={styles.offerCard}>
-    //         <Image source={{ uri: `${BASE_URL}${item.imageUrl}` }} style={styles.offerImage} />
-    //         <View style={styles.offerDetails}>
-    //             <Text style={styles.offerTitle}>{item.title}</Text>
-    //             <Text style={styles.offerDescription}>{item.description}</Text>
-    //             <Text style={styles.offerPoints}>Points Required: {item.pointsRequired}</Text>
-    //         </View>
-    //     </TouchableOpacity>
-    // );
     const renderOffer = ({ item }) => {
         const url = item.imageUrl;
-        console.log('Image URL:', url); // Log the image URL
         const imageUrl = `${BASE_URL}${url}`;
-        console.log('Image URL:', imageUrl); // Log the full image URL
         return (
             <TouchableOpacity onPress={() => handleOfferSelect(item)} style={styles.offerCard}>
                 <Image source={{ uri: `${imageUrl}` }} style={styles.offerImage} />
@@ -165,27 +196,50 @@ export default function Home() {
             </TouchableOpacity>
         );
     };
-    const renderTransaction = ({ item }) => (
-        <View style={styles.transactionCard}>
-            <Text style={styles.transactionText}>{item.description}</Text>
-            <Text style={styles.transactionPoints}>
-                {item.points > 0 ? `+${item.points}` : `${item.points}`} Points
-            </Text>
-        </View>
-    );
-
     return (
         <View style={styles.container}>
             {/* Header Section */}
             <View style={styles.header}>
                 <Image source={require('../assets/rewardhup-logo-resized.png')} style={styles.logo} />
-                <TouchableOpacity onPress={handleSignOut}>
-                    <Icon name="logout" size={24} color="#fff" />
-                </TouchableOpacity>
+                <View style={styles.headerActions}>
+                    <TouchableOpacity onPress={() => setShowSettings(!showSettings)}>
+                        <Icon name="settings" size={24} color="#fff" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleSignOut}>
+                        <Icon name="logout" size={24} color="#fff" />
+                    </TouchableOpacity>
+                </View>
             </View>
-
-            {/* Main Section */}
-            {loading ? (
+                {showSettings ? (
+                // Settings Section
+                <View style={styles.settingsSection}>
+                    <Text style={styles.settingsTitle}>Settings</Text>
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.inputLabel}>Username</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter new username"
+                            value={newUsername}
+                            onChangeText={setNewUsername}
+                        />
+                    </View>
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.inputLabel}>Password</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter new password"
+                            secureTextEntry
+                            value={newPassword}
+                            onChangeText={setNewPassword}
+                        />
+                    </View>
+                    <TouchableOpacity style={styles.saveButton} onPress={handleSaveSettings}>
+                        <Text style={styles.saveButtonText}>Save Changes</Text>
+                    </TouchableOpacity>
+                </View>
+            ) : ( <>
+                 {/* Main Section */}
+            { loading ? (
                 <ActivityIndicator size="large" color="#4caf50" style={styles.loader} />
             ) : (
                 <>
@@ -203,22 +257,24 @@ export default function Home() {
                                     renderItem={renderOffer}
                                 />
                             </View>
+                            <TouchableOpacity
+                                style={styles.qrButton}
+                                onPress={handleGenerateQRCode}
+                                >
+                                <Text style={styles.qrButtonText}>Generate QR Code</Text>
+                            </TouchableOpacity>
                         </>
                     )}
 
                     {activeTab === 'transactions' && (
                         <View style={styles.transactionsSection}>
                             <Text style={styles.transactionsHeading}>Transactions</Text>
-                            <FlatList
-                                data={transactions}
-                                keyExtractor={(item) => item.id}
-                                renderItem={renderTransaction}
-                            />
+                            <TransactionsList transactions={transactions} />
                         </View>
                     )}
                 </>
             )}
-
+            </>)}
             {/* Footer Navigation */}
             <View style={styles.footer}>
                 <TouchableOpacity onPress={() => setActiveTab('home')} style={styles.footerButton}>
@@ -236,6 +292,7 @@ export default function Home() {
                     </Text>
                 </TouchableOpacity>
             </View>
+            <QRCodeModal visible={showQRCodeModal}  qrCodeUrl={qrCodeUrl} onClose={() => setShowQRCodeModal(false)}/>
         </View>
     );
 }
@@ -258,6 +315,7 @@ const styles = StyleSheet.create({
         height: 40,
         resizeMode: 'contain',
     },
+    headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     pointsSection: {
         padding: 20,
         backgroundColor: '#81c784',
@@ -327,27 +385,13 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginBottom: 10,
     },
-    transactionCard: {
-        backgroundColor: '#fff',
-        padding: 15,
-        marginVertical: 10,
-        borderRadius: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 2,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    transactionText: {
-        fontSize: 16,
-    },
-    transactionPoints: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#4caf50',
-    },
+    settingsSection: { padding: 20, backgroundColor: '#f8f8f8', flex: 1 },
+    settingsTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
+    inputContainer: { marginBottom: 15 },
+    inputLabel: { fontSize: 16, marginBottom: 5 },
+    input: { borderWidth: 1, borderColor: '#ddd', padding: 10, borderRadius: 5 },
+    saveButton: { backgroundColor: '#4caf50', padding: 15, borderRadius: 5, alignItems: 'center' },
+    saveButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
     footer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
@@ -371,5 +415,44 @@ const styles = StyleSheet.create({
     loader: {
         flex: 1,
         justifyContent: 'center',
+    },
+    qrButton: {
+        backgroundColor: '#4caf50',
+        padding: 15,
+        borderRadius: 5,
+        margin: 20,
+        alignItems: 'center',
+    },
+    qrButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    qrCodeContainer: {
+        backgroundColor: '#fff',
+        padding: 20,
+        borderRadius: 10,
+        alignItems: 'center',
+        width: '80%',
+    },
+    qrCodeImage: {
+        width: 200,
+        height: 200,
+        marginVertical: 20,
+    },
+    closeButton: {
+        backgroundColor: '#4caf50',
+        padding: 10,
+        borderRadius: 5,
+    },
+    closeButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
     },
 });
