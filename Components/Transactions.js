@@ -24,6 +24,11 @@ const TransactionsList = ({ transactions }) => {
 const styles = StyleSheet.create({
     transactionCard: {
         backgroundColor: '#f9f9f9',
+        display:'flex',
+        alignItems:'center',
+        justifyContent:"center",
+        flexDirection:"column",
+        gap:'10px',
         padding: 15,
         marginVertical: 5,
         borderRadius: 8,

@@ -25,39 +25,38 @@ export default function Login({ navigation }) {
 
         setLoading(true); // Start loading indicator
 
-        // try {
-        //     console.log('Logging in...');
-        //     if (userName) 
-        //         console.log('Username:', userName);
-        //     if (password)
-        //         console.log('password:', password);
+        try {
+            console.log('Logging in...');
+            if (userName) 
+                console.log('Username:', userName);
+            if (password)
+                console.log('password:', password);
 
-        //     const response = await axios.post('http://192.168.1.4:3000/admin/login', {
-        //         username: userName,
-        //         password: password,
-        //         role: 'emp'
-        //     });
-        //     // console.log('Response', response);
-        //     console.log('Navigating to Home:', navigation.navigate);
+            const response = await axios.post('http://192.168.1.4:3000/admin/login', {
+                username: userName,
+                password: password,
+                role: 'emp'
+            });
+            // console.log('Response', response);
+            console.log('Navigating to Home:', navigation.navigate);
 
-        //     console.log(response.data);
-        //     const { accessToken, refreshToken } = response.data;
-        //     console.log('Navigating to Home:', navigation.navigate);
+            console.log(response.data);
+            const { accessToken, refreshToken } = response.data;
+            console.log('Navigating to Home:', navigation.navigate);
 
-        //     // Save tokens to AsyncStorage
-        //     await AsyncStorage.setItem('accessToken', accessToken);
-        //     await AsyncStorage.setItem('refreshToken', refreshToken);
+            // Save tokens to AsyncStorage
+            await AsyncStorage.setItem('accessToken', accessToken);
+            await AsyncStorage.setItem('refreshToken', refreshToken);
 
-        //     Alert.alert('Success', 'Logged in successfully');
-        //     navigation.navigate('Home');
-        //     } catch (error) {
-        //         console.log('Error details:', error.toJSON ? error.toJSON() : error);
-        //         const errorMessage = error.response?.data?.error || error.message || 'An error occurred while logging in.';
-        //         Alert.alert('Error', errorMessage);
-        // } finally {
-        //     setLoading(false); // Stop loading indicator
-        // }
-        navigation.navigate('Home');
+            Alert.alert('Success', 'Logged in successfully');
+            navigation.navigate('Home');
+            } catch (error) {
+                console.log('Error details:', error.toJSON ? error.toJSON() : error);
+                const errorMessage = error.response?.data?.error || error.message || 'An error occurred while logging in.';
+                Alert.alert('Error', errorMessage);
+        } finally {
+            setLoading(false); // Stop loading indicator
+        }
     };
 
     const togglePasswordVisibility = () => {
@@ -95,7 +94,6 @@ export default function Login({ navigation }) {
                         {loading ? <ActivityIndicator size="small" color="#fff" /> : 'Login'}
                     </Text>
                 </TouchableOpacity>
-
                 <StatusBar style="auto" />
             </View>
         </SafeAreaView>

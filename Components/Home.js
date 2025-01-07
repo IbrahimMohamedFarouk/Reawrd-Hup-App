@@ -16,28 +16,35 @@ import { useNavigation } from '@react-navigation/native'; //
 import axiosInstance from './TokenMangement';
 import TransactionsList from './Transactions';
 import QRCodeModal from './GenerateQRCode'
+import Settings from './Setting';
 
 
 
 export default function Home() {
     const [username, setUsername] = useState(''); 
     const [points, setPoints] = useState(); 
-    const [offers, setOffers] = useState([]);
+    const [offers, setOffers] = useState([] );
     const [transactions, setTransactions] = useState([]); 
     const [activeTab, setActiveTab] = useState('home');
+    const [markets, setMarkets] = useState([]);
+    const [activeTabb, setActiveTabb] = useState('offers');//toggle between offers and markets
     const [loading, setLoading] = useState(false); // Loading state
     const [showSettings, setShowSettings] = useState(false); // Toggle settings view
-    const [newUsername, setNewUsername] = useState('');
-    const [newPassword, setNewPassword] = useState('');
     const [qrCodeUrl, setQrCodeUrl] = useState(null); // State for QR Code
     const [showQRCodeModal, setShowQRCodeModal] = useState(false); // State for QR code modal
 
     useEffect(() => {
         fetchUserData();
         fetchOffers();
+        fetchMarkets();
         fetchTransactions();
     }, []);
     const navigation=useNavigation()
+    //setting showing
+    const toggleSettings = () => {
+        setShowSettings(prevState => !prevState);
+    };
+
     const fetchUserData = async () => {
         setLoading(true);
         try {
@@ -52,7 +59,17 @@ export default function Home() {
             setLoading(false);
         }
     };
-
+    const fetchMarkets = async () => {
+        setLoading(true);
+        try {
+            const response = await axiosInstance.get('/api/markets');
+            setMarkets(response.data);
+        } catch (error) {
+            Alert.alert('Error', 'Failed to fetch markets.');
+        } finally {
+            setLoading(false);
+        }
+    };
     const fetchOffers = async () => {
         setLoading(true);
         try {
@@ -75,23 +92,6 @@ export default function Home() {
             Alert.alert('Error', 'Failed to fetch transactions.');
         } finally {
             setLoading(false);
-        }
-    };
-    const handleSaveSettings = async () => {
-        try {
-            const response = await axiosInstance.put('/employee/settings', {
-                username: newUsername || username,
-                password: newPassword,
-            });
-            if (response.status === 200) {
-                Alert.alert('Success', 'Your settings have been updated.');
-                setUsername(newUsername || username); // Update username locally
-                setNewUsername('');
-                setNewPassword('');
-                setShowSettings(false);
-            }
-        } catch (error) {
-            Alert.alert('Error', 'Failed to update settings.');
         }
     };
     const handleSignOut = () => {
@@ -196,13 +196,39 @@ export default function Home() {
             </TouchableOpacity>
         );
     };
+    // In your previous screen where you call navigation.navigate()
+const renderMarket = ({ item }) => {
+    console.log(item.imageUrl)
+    return(
+    <TouchableOpacity
+        style={styles.card}
+        onPress={() => {
+            if (item.website) {
+            navigation.navigate('WebViewScreen', { url: item.website });
+            } else {
+            Alert.alert('No Website', 'This market does not have a website.');
+            }
+        }}
+        >
+        <Image source={{uri:`${item.imageUrl}`}} style={styles.marketImage} />
+        <View style={styles.cardContent}>
+            <Text style={styles.title}>{item.name}</Text>
+            <Text style={styles.industry}>Industry: {item.industry}</Text>
+            <Text style={styles.email}>Email: {item.email}</Text>
+            <Text style={styles.phone}>Phone: {item.phone}</Text>
+            <Text style={styles.points}>Points: {item.points}</Text>
+        </View>
+    </TouchableOpacity>
+    );
+}
+
     return (
         <View style={styles.container}>
             {/* Header Section */}
             <View style={styles.header}>
                 <Image source={require('../assets/rewardhup-logo-resized.png')} style={styles.logo} />
                 <View style={styles.headerActions}>
-                    <TouchableOpacity onPress={() => setShowSettings(!showSettings)}>
+                    <TouchableOpacity onPress={toggleSettings}>
                         <Icon name="settings" size={24} color="#fff" />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={handleSignOut}>
@@ -210,53 +236,62 @@ export default function Home() {
                     </TouchableOpacity>
                 </View>
             </View>
-                {showSettings ? (
-                // Settings Section
-                <View style={styles.settingsSection}>
-                    <Text style={styles.settingsTitle}>Settings</Text>
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.inputLabel}>Username</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter new username"
-                            value={newUsername}
-                            onChangeText={setNewUsername}
-                        />
-                    </View>
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.inputLabel}>Password</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter new password"
-                            secureTextEntry
-                            value={newPassword}
-                            onChangeText={setNewPassword}
-                        />
-                    </View>
-                    <TouchableOpacity style={styles.saveButton} onPress={handleSaveSettings}>
-                        <Text style={styles.saveButtonText}>Save Changes</Text>
-                    </TouchableOpacity>
-                </View>
-            ) : ( <>
-                 {/* Main Section */}
-            { loading ? (
+            {/* Main Section */}
+            {showSettings? (<>
+                    {/* Render Settings Component */}
+                    <Settings isVisible={showSettings} onClose={toggleSettings} />
+            </>):(<>
+                { loading ? (
                 <ActivityIndicator size="large" color="#4caf50" style={styles.loader} />
             ) : (
                 <>
                     {activeTab === 'home' && (
                         <>
                             <View style={styles.pointsSection}>
-                                <Text style={styles.helloText}>Hello , {username}!</Text>  
+                                <Text style={styles.helloText}>Hello, {username}</Text>  
                                 <Text style={styles.pointsText}>Points: {points}</Text>
                             </View>
-                            <View style={styles.offersSection}>
-                                <Text style={styles.offersHeading}>Offers</Text>
-                                <FlatList
-                                    data={offers}
-                                    keyExtractor={(item) => item.id}
-                                    renderItem={renderOffer}
-                                />
+                             {/* Tabs */}
+                            <View style={styles.tabs}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.tabButton,
+                                        activeTabb === 'offers' && styles.activeTab,
+                                    ]}
+                                    onPress={() => setActiveTabb('offers')}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.tabText,
+                                            activeTabb === 'offers' && styles.activeTabText,
+                                        ]}
+                                    >
+                                        Offers
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.tabButton,
+                                        activeTabb === 'markets' && styles.activeTab,
+                                    ]}
+                                    onPress={() => setActiveTabb('markets')}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.tabText,
+                                            activeTab === 'markets' && styles.activeTabText,
+                                        ]}
+                                    >
+                                        Markets
+                                    </Text>
+                                </TouchableOpacity>
                             </View>
+                            <FlatList
+                                data={activeTabb === 'offers' ? offers : markets}
+                                keyExtractor={(item) => item.id.toString()}
+                                renderItem={activeTabb === 'offers' ? renderOffer : renderMarket}
+                                contentContainerStyle={styles.list}
+                            />
                             <TouchableOpacity
                                 style={styles.qrButton}
                                 onPress={handleGenerateQRCode}
@@ -275,6 +310,7 @@ export default function Home() {
                 </>
             )}
             </>)}
+            
             {/* Footer Navigation */}
             <View style={styles.footer}>
                 <TouchableOpacity onPress={() => setActiveTab('home')} style={styles.footerButton}>
@@ -317,18 +353,22 @@ const styles = StyleSheet.create({
     },
     headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     pointsSection: {
+        display:'flex',
+        flexDirection: 'row',
+        alignItems:"center",
+        justifyContent:"space-around",
         padding: 20,
-        backgroundColor: '#81c784',
+        backgroundColor: '#fff',
         alignItems: 'center',
     },
     helloText: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#fff',
+        color: '#4caf50',
     },
     pointsText: {
         fontSize: 18,
-        color: '#fff',
+        color: '#4caf50',
     },
     offersSection: {
         flex: 1,
@@ -454,5 +494,78 @@ const styles = StyleSheet.create({
     closeButtonText: {
         color: '#fff',
         fontWeight: 'bold',
+    },
+    tabs: {
+        flexDirection: 'row',
+        backgroundColor: '#81c784',
+        justifyContent: 'center',
+    },
+    tabButton: {
+        flex: 1,
+        padding: 15,
+        alignItems: 'center',
+    },
+    activeTab: {
+        backgroundColor: '#4caf50',
+    },
+    tabText: {
+        fontSize: 16,
+        color: '#fff',
+    },
+    activeTabText: {
+        fontWeight: 'bold',
+    },
+    list: {
+        padding: 10,
+    },
+    card: {
+        backgroundColor: '#fff',
+        marginBottom: 15,
+        borderRadius: 10,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
+    },
+    marketImage: {
+        width: '100%',
+        height: 150,
+    },
+    cardContent: {
+        padding: 15,
+    },
+    title: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 5,
+    },
+    description: {
+        fontSize: 14,
+        color: '#666',
+        marginBottom: 5,
+    },
+    points: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#4caf50',
+    },
+    industry: {
+        fontSize: 14,
+        color: '#666',
+    },
+    email: {
+        fontSize: 14,
+        color: '#666',
+    },
+    phone: {
+        fontSize: 14,
+        color: '#666',
+    },
+    loader: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });
