@@ -243,10 +243,11 @@ const renderMarket = ({ item }) => {
         >
         <Image source={{uri:`${imageUrl}`}} style={styles.marketImage} />
         <View style={styles.cardContent}>
-            <Text style={styles.title}>{item.name}</Text>
+            <Text style={styles.title}>{item.username}</Text>
             <Text style={styles.industry}>Industry: {item.industryType}</Text>
             <Text style={styles.email}>Email: {item.email}</Text>
             <Text style={styles.phone}>Phone: {item.phonenumber}</Text>
+            <Text style={styles.tt}>go to web site →</Text>
         </View>
     </TouchableOpacity>
     );
@@ -353,6 +354,9 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f8f8f8',
         paddingTop: 50,
+    },
+    tt :{
+        textAlign: 'right'
     },
     header: {
         backgroundColor: '#4caf50',
