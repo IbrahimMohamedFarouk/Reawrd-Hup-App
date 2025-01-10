@@ -11,10 +11,12 @@ import {
     Image,
     TextInput,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useNavigation } from '@react-navigation/native'; // 
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
+
 import axiosInstance from './TokenMangement';
-import TransactionsList from './Transactions';
+import Vector from 'react-native-vector-icons/MaterialIcons';
 import QRCodeModal from './GenerateQRCode'
 import Settings from './Setting';
 
@@ -27,22 +29,24 @@ export default function Home() {
     const [transactions, setTransactions] = useState([]); 
     const [activeTab, setActiveTab] = useState('home');
     const [markets, setMarkets] = useState([]);
-    const [activeTabb, setActiveTabb] = useState('offers');//toggle between offers and markets
     const [loading, setLoading] = useState(false); // Loading state
     const [showSettings, setShowSettings] = useState(false); // Toggle settings view
     const [qrCodeUrl, setQrCodeUrl] = useState(null); // State for QR Code
     const [showQRCodeModal, setShowQRCodeModal] = useState(false); // State for QR code modal
+    const [id, setId] = useState();
 
-    useEffect(() => {
+    useFocusEffect(
+        React.useCallback(() => {
         fetchUserData();
         fetchOffers();
         fetchMarkets();
-        fetchTransactions();
-    }, []);
+    }, [])
+);
     const navigation=useNavigation()
     //setting showing
     const toggleSettings = () => {
         setShowSettings(prevState => !prevState);
+        setActiveTab('home');
     };
 
     const fetchUserData = async () => {
@@ -50,19 +54,25 @@ export default function Home() {
         try {
             console.log('fetching user data');
             const data = await axiosInstance.get('/employee');
+            console.log(data.data[0]);
             setUsername(data.data[0].firstname);
+            setId(data.data[0]._id);
             setPoints(data.data[0].points);
-            console.log(data.data[0].firstname);
         } catch (error) {
             Alert.alert('Error', 'Failed to fetch user Data.');
         } finally {
             setLoading(false);
         }
     };
+    useEffect(() => {
+        if (id) {
+          fetchTransactions();
+        }
+      }, [id]);
     const fetchMarkets = async () => {
         setLoading(true);
         try {
-            const response = await axiosInstance.get('/api/markets');
+            const response = await axiosInstance.get('/superadmin/thirdparties');
             setMarkets(response.data);
         } catch (error) {
             Alert.alert('Error', 'Failed to fetch markets.');
@@ -86,14 +96,17 @@ export default function Home() {
     const fetchTransactions = async () => {
         setLoading(true);
         try {
-            const data = await makeAuthenticatedRequest('https://api.example.com/transactions');
-            setTransactions(data);
+            const data = await axiosInstance.get(`/employee/transactions/${id}`);
+
+            setTransactions(data.data);
+            console.log(data.data);
         } catch (error) {
             Alert.alert('Error', 'Failed to fetch transactions.');
         } finally {
             setLoading(false);
         }
     };
+
     const handleSignOut = () => {
         // Show a confirmation dialog before signing out
         Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -129,9 +142,9 @@ export default function Home() {
     const handleGenerateQRCode = async () => {
         setLoading(true);
         try {
-            const response = await axiosInstance.get('/api/qrcode', { params: { username } }); // Assuming backend expects username
-            if (response.status === 200 && response.data.qrCodeUrl) {
-                setQrCodeUrl(response.data.qrCodeUrl);
+            const response = await axiosInstance.post('/employee-app/generate-qr'); // Assuming backend expects username
+            if (response.status === 200 && response.data.Qrcode) {
+                setQrCodeUrl(response.data.Qrcode);
                 setShowQRCodeModal(true); // Show QR code modal
             } else {
                 Alert.alert('Error', 'Failed to generate QR code.');
@@ -144,7 +157,7 @@ export default function Home() {
     };
     
     const handleOfferSelect = (offer) => {
-        if (points >= offer.pointsRequired) {
+        if (points >= offer.points) {
             // Proceed with submitting the offer redemption
             submitOffer(offer);
         } else {
@@ -155,32 +168,47 @@ export default function Home() {
     const submitOffer = async (offer) => {
         setLoading(true);
         try {
-            const response = await fetch('https://api.example.com/redeemOffer', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    username,
-                    offerId: offer.id,
-                    pointsRequired: offer.pointsRequired,
-                }),
-            });
 
-            const data = await response.json();
-            if (data.success) {
+            const response = await axiosInstance.post('/employee-app/generate-code', {
+                offerId: offer._id,
+            })
+            console.log(response.data);
+            const code = response.data.code || response.data.fcode;
+            
+            if (code) {
                 // Update the points state to reflect the deduction
-                setPoints(points - offer.pointsRequired);
-                Alert.alert('Success', `You have successfully redeemed the offer: ${offer.title}`);
+                Alert.alert('',`offer's code: ${code}`);
             } else {
-                Alert.alert('Error', 'Failed to redeem the offer.');
+                Alert.alert(response.data.message);
             }
         } catch (error) {
-            Alert.alert('Error', 'Failed to redeem the offer.');
+            console.log('Error:', error);
+            Alert.alert('Error', error.response.data.message || 'Failed to redeem the offer.');
         } finally {
             setLoading(false);
         }
     };
+
+    const renderTransaction = ({ item }) => {
+        const transactionDate = new Date(item.date);
+        const formattedDate = transactionDate.toLocaleDateString(); // Display only date (e.g., 2025-01-05)
+        const formattedTime = transactionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // Display only hours and minutes (e.g., 10:30 AM)
+        const pointsStyle = item.type === 'added' ? styles.addedPoints : styles.deductedPoints;
+
+        return (
+        <View style={styles.transactionCard}>
+            <Text style={styles.transactionText}>Date: {formattedDate}</Text>
+            <Text style={styles.transactionText}>Time: {formattedTime}</Text>
+            <Text style={styles.transactionText}>{item.thirdParty}</Text>
+            <Text style={[styles.transactionPoints, pointsStyle]}>
+                {item.type === 'added' ? `+${item.points}` : `${item.points}`} Point
+            </Text>
+            <Text style={styles.transactionText}>Type: {item.type}</Text>
+            <Text style={styles.transactionText}>{item.description}</Text>
+            
+        </View>
+    )};
+
     const BASE_URL = "http://192.168.1.4:3000";
     const renderOffer = ({ item }) => {
         const url = item.imageUrl;
@@ -191,13 +219,16 @@ export default function Home() {
                 <View style={styles.offerDetails}>
                     <Text style={styles.offerTitle}>{item.title}</Text>
                     <Text style={styles.offerDescription}>{item.description}</Text>
-                    <Text style={styles.offerPoints}>Points Required: {item.pointsRequired}</Text>
+                    <Text style={styles.offerPoints}>Points Required: {item.points}</Text>
+                    <Text>Redeem points </Text>
                 </View>
             </TouchableOpacity>
         );
     };
     // In your previous screen where you call navigation.navigate()
 const renderMarket = ({ item }) => {
+    const url = item.imageUrl;
+    const imageUrl = `${BASE_URL}${url}`;
     console.log(item.imageUrl)
     return(
     <TouchableOpacity
@@ -210,13 +241,12 @@ const renderMarket = ({ item }) => {
             }
         }}
         >
-        <Image source={{uri:`${item.imageUrl}`}} style={styles.marketImage} />
+        <Image source={{uri:`${imageUrl}`}} style={styles.marketImage} />
         <View style={styles.cardContent}>
             <Text style={styles.title}>{item.name}</Text>
-            <Text style={styles.industry}>Industry: {item.industry}</Text>
+            <Text style={styles.industry}>Industry: {item.industryType}</Text>
             <Text style={styles.email}>Email: {item.email}</Text>
-            <Text style={styles.phone}>Phone: {item.phone}</Text>
-            <Text style={styles.points}>Points: {item.points}</Text>
+            <Text style={styles.phone}>Phone: {item.phonenumber}</Text>
         </View>
     </TouchableOpacity>
     );
@@ -229,7 +259,7 @@ const renderMarket = ({ item }) => {
                 <Image source={require('../assets/rewardhup-logo-resized.png')} style={styles.logo} />
                 <View style={styles.headerActions}>
                     <TouchableOpacity onPress={toggleSettings}>
-                        <Icon name="settings" size={24} color="#fff" />
+                        <Vector name="settings" size={24} color="#fff" />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={handleSignOut}>
                         <Icon name="logout" size={24} color="#fff" />
@@ -252,59 +282,33 @@ const renderMarket = ({ item }) => {
                                 <Text style={styles.pointsText}>Points: {points}</Text>
                             </View>
                              {/* Tabs */}
-                            <View style={styles.tabs}>
-                                <TouchableOpacity
-                                    style={[
-                                        styles.tabButton,
-                                        activeTabb === 'offers' && styles.activeTab,
-                                    ]}
-                                    onPress={() => setActiveTabb('offers')}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.tabText,
-                                            activeTabb === 'offers' && styles.activeTabText,
-                                        ]}
-                                    >
-                                        Offers
-                                    </Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[
-                                        styles.tabButton,
-                                        activeTabb === 'markets' && styles.activeTab,
-                                    ]}
-                                    onPress={() => setActiveTabb('markets')}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.tabText,
-                                            activeTab === 'markets' && styles.activeTabText,
-                                        ]}
-                                    >
-                                        Markets
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
+                            
                             <FlatList
-                                data={activeTabb === 'offers' ? offers : markets}
-                                keyExtractor={(item) => item.id.toString()}
-                                renderItem={activeTabb === 'offers' ? renderOffer : renderMarket}
+                                data={offers}
+                                keyExtractor={(item) => item.id}
+                                renderItem={renderOffer}
                                 contentContainerStyle={styles.list}
                             />
-                            <TouchableOpacity
-                                style={styles.qrButton}
-                                onPress={handleGenerateQRCode}
-                                >
-                                <Text style={styles.qrButtonText}>Generate QR Code</Text>
-                            </TouchableOpacity>
+                            
                         </>
                     )}
-
+                    {activeTab === 'markets' && (
+                        <FlatList
+                            data={markets}
+                            keyExtractor={(item) => item.id}
+                            renderItem={renderMarket}
+                            contentContainerStyle={styles.list}
+                        />
+                    )}
                     {activeTab === 'transactions' && (
                         <View style={styles.transactionsSection}>
                             <Text style={styles.transactionsHeading}>Transactions</Text>
-                            <TransactionsList transactions={transactions} />
+                            <FlatList
+                                data={transactions}
+                                keyExtractor={(item) => item._id}
+                                renderItem={renderTransaction}
+                                contentContainerStyle={styles.list}
+                            />
                         </View>
                     )}
                 </>
@@ -313,22 +317,33 @@ const renderMarket = ({ item }) => {
             
             {/* Footer Navigation */}
             <View style={styles.footer}>
-                <TouchableOpacity onPress={() => setActiveTab('home')} style={styles.footerButton}>
+                <TouchableOpacity onPress={() => {setActiveTab('home'); setShowSettings(false);}} style={styles.footerButton}>
                     <Icon name="home" size={24} color={activeTab === 'home' ? '#4caf50' : '#999'} />
                     <Text style={[styles.footerText, activeTab === 'home' && styles.activeText]}>Home</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => setActiveTab('transactions')} style={styles.footerButton}>
-                    <Icon
-                        name="receipt"
-                        size={24}
-                        color={activeTab === 'transactions' ? '#4caf50' : '#999'}
-                    />
+                <TouchableOpacity onPress={() => {setActiveTab('transactions'); setShowSettings(false);}} style={styles.footerButton}>
+                    <Icon name="receipt" size={24} color={activeTab === 'transactions' ? '#4caf50' : '#999'} />
                     <Text style={[styles.footerText, activeTab === 'transactions' && styles.activeText]}>
                         Transactions
                     </Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                    style={styles.footerButton}
+                    onPress={handleGenerateQRCode}
+                    >
+                        <Icon name="qrcode" size={24} color={showQRCodeModal == true ? '#4caf50' : '#999'} />
+                    <Text style={[styles.footerText]}>qrcode</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => 
+                    {setActiveTab('markets');
+                     setShowSettings(false);}} style={styles.footerButton}>
+                    <Icon name="store" size={24} color={activeTab === 'markets' ? '#4caf50' : '#999'} />
+                    <Text style={[styles.footerText, activeTab === 'markets' && styles.activeText]}>
+                        Stores
+                    </Text>
+                </TouchableOpacity>
             </View>
-            <QRCodeModal visible={showQRCodeModal}  qrCodeUrl={qrCodeUrl} onClose={() => setShowQRCodeModal(false)}/>
+            <QRCodeModal visible={showQRCodeModal}  Qrcode={qrCodeUrl} onClose={() => setShowQRCodeModal(false)}/>
         </View>
     );
 }
@@ -432,6 +447,21 @@ const styles = StyleSheet.create({
     input: { borderWidth: 1, borderColor: '#ddd', padding: 10, borderRadius: 5 },
     saveButton: { backgroundColor: '#4caf50', padding: 15, borderRadius: 5, alignItems: 'center' },
     saveButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+    transactionCard: {
+        backgroundColor: '#f9f9f9',
+        display:'flex',
+        alignItems:'center',
+        justifyContent:"center",
+        flexDirection:"column",
+        gap:'10px',
+        padding: 15,
+        marginVertical: 5,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#ddd',
+    },
+    transactionText: { fontSize: 16 },
+    transactionPoints: { fontSize: 16, fontWeight: 'bold', color: '#4caf50' },
     footer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
@@ -550,6 +580,11 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: 'bold',
         color: '#4caf50',
+    },
+    deductedPoints: {
+        fontSize: 16, 
+        fontWeight: 'bold',
+        color: 'red',
     },
     industry: {
         fontSize: 14,

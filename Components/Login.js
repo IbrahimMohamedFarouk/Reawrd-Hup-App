@@ -41,15 +41,20 @@ export default function Login({ navigation }) {
             console.log('Navigating to Home:', navigation.navigate);
 
             console.log(response.data);
-            const { accessToken, refreshToken } = response.data;
+            const { accessToken, refreshToken, passwordChangeRequired } = response.data;
             console.log('Navigating to Home:', navigation.navigate);
 
             // Save tokens to AsyncStorage
             await AsyncStorage.setItem('accessToken', accessToken);
             await AsyncStorage.setItem('refreshToken', refreshToken);
+            // await AsyncStorage.setItem("passwordChangeRequired", passwordChangeRequired);
 
             Alert.alert('Success', 'Logged in successfully');
-            navigation.navigate('Home');
+                if (passwordChangeRequired) {
+                    navigation.navigate('change-password');
+                } else {
+                navigation.navigate('Home');
+            }
             } catch (error) {
                 console.log('Error details:', error.toJSON ? error.toJSON() : error);
                 const errorMessage = error.response?.data?.error || error.message || 'An error occurred while logging in.';

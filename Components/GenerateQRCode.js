@@ -2,14 +2,14 @@
 import React from 'react';
 import { Modal, View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 
-const QRCodeModal = ({ visible, qrCodeUrl, onClose }) => {
+const QRCodeModal = ({ visible, Qrcode, onClose }) => {
     return (
         <Modal visible={visible} transparent={true} animationType="slide">
             <View style={styles.modalContainer}>
                 <View style={styles.modalContent}>
                     <Text style={styles.modalTitle}>Your QR Code</Text>
-                    {qrCodeUrl ? (
-                        <Image source={{ uri: qrCodeUrl }} style={styles.qrCodeImage} />
+                    {Qrcode ? (
+                        <Image source={{ uri: Qrcode }} style={styles.qrCodeImage} />
                     ) : (
                         <Text>Loading QR Code...</Text>
                     )}
