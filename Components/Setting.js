@@ -55,15 +55,20 @@ const Settings = ({ isVisible, onClose }) => {
         setOldPassword('');
         setNewPassword('');
         onClose();
+      } else if (response.status === 400) {
+        console.log('Error:', error.response.data.errors.phonenumber);
+
+        Alert.alert('Error:', error.response.data.errors.phonenumber);
+        
       }
     } catch (error) {
-      console.log('Error:', error.response);
+      console.log('Error:', error.response.data.errors.phonenumber);
 
-      if (error.response && error.response.data) {
-        Alert.alert('Error', error.response.data.message || 'Failed to update settings.');
-      } else {
-        Alert.alert('Error', 'Failed to update settings.');
-      }
+    //   if (error.response && error.response.data) {
+        Alert.alert('Error:', error.response.data.errors.phonenumber);
+    //   } else {
+    //     Alert.alert('Error', 'Failed to update settings.');
+    //   }
     }
   };
 
