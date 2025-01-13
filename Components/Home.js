@@ -9,7 +9,6 @@ import {
     Alert,
     ActivityIndicator,
     Image,
-    TextInput,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
@@ -27,7 +26,7 @@ export default function Home() {
     const [points, setPoints] = useState(); 
     const [offers, setOffers] = useState([] );
     const [transactions, setTransactions] = useState([]); 
-    const [activeTab, setActiveTab] = useState('home');
+const [activeTab, setActiveTab] = useState('home');
     const [markets, setMarkets] = useState([]);
     const [loading, setLoading] = useState(false); // Loading state
     const [showSettings, setShowSettings] = useState(false); // Toggle settings view
@@ -338,7 +337,7 @@ const renderMarket = ({ item }) => {
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => 
                     {setActiveTab('markets');
-                     setShowSettings(false);}} style={styles.footerButton}>
+                    setShowSettings(false);}} style={styles.footerButton}>
                     <Icon name="store" size={24} color={activeTab === 'markets' ? '#4caf50' : '#999'} />
                     <Text style={[styles.footerText, activeTab === 'markets' && styles.activeText]}>
                         Stores
