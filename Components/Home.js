@@ -12,14 +12,13 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
-import Clipboard from '@react-native-clipboard/clipboard';
-
+import { useFocusEffect } from '@react-navigation/native';
+import ChatbotIcon from './ChatbotIcon';
+import ChatWindow from './ChatBotWindow';
 import axiosInstance from './TokenMangement';
 import Vector from 'react-native-vector-icons/MaterialIcons';
 import QRCodeModal from './GenerateQRCode'
 import Settings from './Setting';
-import ChatbotIcon from './ChatBotIcon';
-import ChatWindow from './ChatBotWindow';
 
 
 
@@ -34,22 +33,17 @@ export default function Home() {
     const [showSettings, setShowSettings] = useState(false); // Toggle settings view
     const [qrCodeUrl, setQrCodeUrl] = useState(null); // State for QR Code
     const [showQRCodeModal, setShowQRCodeModal] = useState(false); // State for QR code modal
-    const [isChatOpen, setIsChatOpen] = useState(false);
     const [id, setId] = useState();
 
     useEffect(() => {
         if (activeTab === 'home'){
-            // fetchUserData();
-            // fetchOffers();
+            fetchUserData();
+            fetchOffers();
         }
-            // fetchMarkets();
+            fetchMarkets();
     }, [activeTab]);
 
     const navigation=useNavigation()
-
-    const toggleChat = () => {
-        setIsChatOpen((prev) => !prev);
-    };
     //setting showing
     const toggleSettings = () => {
         setShowSettings(prevState => !prevState);
@@ -73,9 +67,9 @@ export default function Home() {
     };
     useEffect(() => {
         if (id || activeTab === 'transactions') {
-        fetchTransactions();
+          fetchTransactions();
         }
-    }, [id, activeTab]);
+      }, [id, activeTab]);
     const fetchMarkets = async () => {
         setLoading(true);
         try {
@@ -175,13 +169,16 @@ export default function Home() {
     const submitOffer = async (offer) => {
         setLoading(true);
         try {
+
             const response = await axiosInstance.post('/employee-app/generate-code', {
                 offerId: offer._id,
-            });
+            })
+            console.log(response.data);
             const code = response.data.code || response.data.fcode;
+            
             if (code) {
-                Clipboard.setString(offerCode);
-                Alert.alert('Code Copied', `Offer's code: ${code}`);
+                // Update the points state to reflect the deduction
+                Alert.alert('',`offer's code: ${code}`);
             } else {
                 Alert.alert(response.data.message);
             }
@@ -192,6 +189,7 @@ export default function Home() {
             setLoading(false);
         }
     };
+
     const renderTransaction = ({ item }) => {
         const transactionDate = new Date(item.date);
         const formattedDate = transactionDate.toLocaleDateString(); // Display only date (e.g., 2025-01-05)
@@ -260,7 +258,7 @@ const renderMarket = ({ item }) => {
         <View style={styles.container}>
             {/* Header Section */}
             <View style={styles.header}>
-                <Image source={require('../assets/rewardhub-high-resolution-logo__2_-removebg-preview.png')} style={styles.logo} resizeMode="stretch" />
+                <Image source={require('../assets/rewardhub-high-resolution-logo__2_-removebg-preview.png')} style={styles.logo} />
                 <View style={styles.headerActions}>
                     <TouchableOpacity onPress={toggleSettings}>
                         <Vector name="settings" size={24} color="#fff" />
@@ -320,7 +318,7 @@ const renderMarket = ({ item }) => {
             </>)}
             {/* chatBot */}
             {isChatOpen && <ChatWindow onClose={toggleChat} />}
-            <ChatbotIcon onPress={toggleChat} />
+            <ChatbotIcon onPress={toggleChat} />
             {/* Footer Navigation */}
             <View style={styles.footer}>
                 <TouchableOpacity onPress={() => {setActiveTab('home'); setShowSettings(false);}} style={styles.footerButton}>
@@ -333,13 +331,13 @@ const renderMarket = ({ item }) => {
                         Transactions
                     </Text>
                 </TouchableOpacity>
-                {/* <TouchableOpacity
+                <TouchableOpacity
                     style={styles.footerButton}
                     onPress={handleGenerateQRCode}
                     >
                         <Icon name="qrcode" size={24} color={showQRCodeModal == true ? '#4caf50' : '#999'} />
                     <Text style={[styles.footerText]}>qrcode</Text>
-                </TouchableOpacity> */}
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => 
                     {setActiveTab('markets');
                     setShowSettings(false);}} style={styles.footerButton}>
@@ -372,7 +370,7 @@ const styles = StyleSheet.create({
     },
     logo: {
         width: 100,
-        height: 60,
+        height: 40,
         resizeMode: 'contain',
     },
     headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },

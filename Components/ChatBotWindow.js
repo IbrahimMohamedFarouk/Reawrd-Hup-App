@@ -1,5 +1,7 @@
     // ChatWindow.js
     import React, { useState } from 'react';
+    import axios from './TokenMangement.js';
+    
     import {
     View,
     Text,
@@ -29,19 +31,18 @@
         
             try {
             // Post the message to your API
-            const response = await fetch('YOUR_API_URL', {
-                method: 'POST',
-                headers: {
-                'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ message: messageText }),
-            });
+            // const response = await axios.post('http://localhost:3000/ai/chat', {
+            //     headers: {
+            //     'Content-Type': 'application/json',
+            //     },
+            //     input: messageText,
+            // });
         
             if (!response.ok) {
                 throw new Error('Failed to fetch bot response');
             }
         
-            const data = await response.json();
+            const data = await response.message.json();
         
             // Assuming the API response contains a `reply` field with the bot's message
             const botResponse = { sender: 'bot', text: data.reply || 'No response from bot.' };

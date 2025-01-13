@@ -28,7 +28,9 @@
     "react-native-screens": "^4.4.0",
     "react-native-vector-icons": "^10.2.0",
     "react-native-webview": "^13.12.5",
-    "rewardhup_app1": "file:"
+    "rewardhup_app1": "file:",
+    "expo-clipboard": "~7.0.1",
+    "expo-dev-client": "~5.0.9"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
