@@ -35,13 +35,14 @@ export default function Home() {
     const [showQRCodeModal, setShowQRCodeModal] = useState(false); // State for QR code modal
     const [id, setId] = useState();
 
-    useFocusEffect(
-        React.useCallback(() => {
-        fetchUserData();
-        fetchOffers();
-        fetchMarkets();
-    }, [])
-);
+    useEffect(() => {
+        if (activeTab === 'home'){
+            fetchUserData();
+            fetchOffers();
+        }
+            fetchMarkets();
+    }, [activeTab]);
+
     const navigation=useNavigation()
     //setting showing
     const toggleSettings = () => {
@@ -65,10 +66,10 @@ export default function Home() {
         }
     };
     useEffect(() => {
-        if (id) {
+        if (id || activeTab === 'transactions') {
           fetchTransactions();
         }
-      }, [id]);
+      }, [id, activeTab]);
     const fetchMarkets = async () => {
         setLoading(true);
         try {
