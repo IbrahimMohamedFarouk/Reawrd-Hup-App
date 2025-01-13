@@ -28,7 +28,7 @@ export default function Home() {
     const [points, setPoints] = useState(); 
     const [offers, setOffers] = useState([] );
     const [transactions, setTransactions] = useState([]); 
-const [activeTab, setActiveTab] = useState('home');
+    const [activeTab, setActiveTab] = useState('home');
     const [markets, setMarkets] = useState([]);
     const [loading, setLoading] = useState(false); // Loading state
     const [showSettings, setShowSettings] = useState(false); // Toggle settings view
@@ -227,7 +227,7 @@ const [activeTab, setActiveTab] = useState('home');
                     <Text style={styles.offerTitle}>{item.title}</Text>
                     <Text style={styles.offerDescription}>{item.description}</Text>
                     <Text style={styles.offerPoints}>Points Required: {item.points}</Text>
-                    <Text>Redeem points </Text>
+                    <Text style={styles.tt}>redeem code →</Text>
                 </View>
             </TouchableOpacity>
         );
@@ -337,13 +337,13 @@ const renderMarket = ({ item }) => {
                         Transactions
                     </Text>
                 </TouchableOpacity>
-                <TouchableOpacity
+                {/* <TouchableOpacity
                     style={styles.footerButton}
                     onPress={handleGenerateQRCode}
                     >
                         <Icon name="qrcode" size={24} color={showQRCodeModal == true ? '#4caf50' : '#999'} />
                     <Text style={[styles.footerText]}>qrcode</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
                 <TouchableOpacity onPress={() => 
                     {setActiveTab('markets');
                     setShowSettings(false);}} style={styles.footerButton}>
