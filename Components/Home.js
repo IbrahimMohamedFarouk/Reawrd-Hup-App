@@ -18,6 +18,8 @@ import axiosInstance from './TokenMangement';
 import Vector from 'react-native-vector-icons/MaterialIcons';
 import QRCodeModal from './GenerateQRCode'
 import Settings from './Setting';
+import ChatbotIcon from './ChatBotIcon';
+import ChatWindow from './ChatBotWindow';
 
 
 
@@ -32,6 +34,7 @@ const [activeTab, setActiveTab] = useState('home');
     const [showSettings, setShowSettings] = useState(false); // Toggle settings view
     const [qrCodeUrl, setQrCodeUrl] = useState(null); // State for QR Code
     const [showQRCodeModal, setShowQRCodeModal] = useState(false); // State for QR code modal
+    const [isChatOpen, setIsChatOpen] = useState(false);
     const [id, setId] = useState();
 
     useEffect(() => {
@@ -43,6 +46,10 @@ const [activeTab, setActiveTab] = useState('home');
     }, [activeTab]);
 
     const navigation=useNavigation()
+
+    const toggleChat = () => {
+        setIsChatOpen((prev) => !prev);
+    };
     //setting showing
     const toggleSettings = () => {
         setShowSettings(prevState => !prevState);
@@ -66,9 +73,9 @@ const [activeTab, setActiveTab] = useState('home');
     };
     useEffect(() => {
         if (id || activeTab === 'transactions') {
-          fetchTransactions();
+        fetchTransactions();
         }
-      }, [id, activeTab]);
+    }, [id, activeTab]);
     const fetchMarkets = async () => {
         setLoading(true);
         try {
@@ -315,7 +322,9 @@ const renderMarket = ({ item }) => {
                 </>
             )}
             </>)}
-            
+            {/* chatBot */}
+            {isChatOpen && <ChatWindow onClose={toggleChat} />}
+            <ChatbotIcon onPress={toggleChat} />
             {/* Footer Navigation */}
             <View style={styles.footer}>
                 <TouchableOpacity onPress={() => {setActiveTab('home'); setShowSettings(false);}} style={styles.footerButton}>
