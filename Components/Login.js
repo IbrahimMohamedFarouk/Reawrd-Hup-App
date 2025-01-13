@@ -71,7 +71,7 @@ export default function Login({ navigation }) {
     return (
         <SafeAreaView style={styles.container}>
             <Image
-                source={require('../assets/rewardhup-high-resolution-logo-transparent.png')}
+                source={require('../assets/rewardhub-high-resolution-logo__2_-removebg-preview.png')}
                 style={styles.image}
             />
             <View>
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     image: {
-        width: 350,
+        width: 450,
         height: 105,
     },
     passwordContainer: {

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
-import { useFocusEffect } from '@react-navigation/native';
+import Clipboard from '@react-native-clipboard/clipboard';
 
 import axiosInstance from './TokenMangement';
 import Vector from 'react-native-vector-icons/MaterialIcons';
@@ -39,10 +39,10 @@ export default function Home() {
 
     useEffect(() => {
         if (activeTab === 'home'){
-            fetchUserData();
-            fetchOffers();
+            // fetchUserData();
+            // fetchOffers();
         }
-            fetchMarkets();
+            // fetchMarkets();
     }, [activeTab]);
 
     const navigation=useNavigation()
@@ -175,16 +175,13 @@ export default function Home() {
     const submitOffer = async (offer) => {
         setLoading(true);
         try {
-
             const response = await axiosInstance.post('/employee-app/generate-code', {
                 offerId: offer._id,
-            })
-            console.log(response.data);
+            });
             const code = response.data.code || response.data.fcode;
-            
             if (code) {
-                // Update the points state to reflect the deduction
-                Alert.alert('',`offer's code: ${code}`);
+                Clipboard.setString(offerCode);
+                Alert.alert('Code Copied', `Offer's code: ${code}`);
             } else {
                 Alert.alert(response.data.message);
             }
@@ -195,7 +192,6 @@ export default function Home() {
             setLoading(false);
         }
     };
-
     const renderTransaction = ({ item }) => {
         const transactionDate = new Date(item.date);
         const formattedDate = transactionDate.toLocaleDateString(); // Display only date (e.g., 2025-01-05)
@@ -264,7 +260,7 @@ const renderMarket = ({ item }) => {
         <View style={styles.container}>
             {/* Header Section */}
             <View style={styles.header}>
-                <Image source={require('../assets/rewardhup-logo-resized.png')} style={styles.logo} />
+                <Image source={require('../assets/rewardhub-high-resolution-logo__2_-removebg-preview.png')} style={styles.logo} resizeMode="stretch" />
                 <View style={styles.headerActions}>
                     <TouchableOpacity onPress={toggleSettings}>
                         <Vector name="settings" size={24} color="#fff" />
@@ -376,7 +372,7 @@ const styles = StyleSheet.create({
     },
     logo: {
         width: 100,
-        height: 40,
+        height: 60,
         resizeMode: 'contain',
     },
     headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
