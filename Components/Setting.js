@@ -64,7 +64,7 @@ const Settings = ({ isVisible, onClose }) => {
     } catch (error) {
       console.log('Error:', error.response.data.errors.phonenumber);
 
-    //   if (error.response && error.response.data) {
+      // if (error.response && error.response.data) {
         Alert.alert('Error:', error.response.data.errors.phonenumber);
     //   } else {
     //     Alert.alert('Error', 'Failed to update settings.');
