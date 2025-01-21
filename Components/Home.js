@@ -13,11 +13,11 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
-import ChatbotIcon from './ChatbotIcon';
+import ChatbotIcon from './ChatBotIcon';
 import ChatWindow from './ChatBotWindow';
 import axiosInstance from './TokenMangement';
 import Vector from 'react-native-vector-icons/MaterialIcons';
-import QRCodeModal from './GenerateQRCode'
+import QRCodeModal from './GenerateQRCode';
 import Settings from './Setting';
 
 
@@ -34,6 +34,8 @@ export default function Home() {
     const [qrCodeUrl, setQrCodeUrl] = useState(null); // State for QR Code
     const [showQRCodeModal, setShowQRCodeModal] = useState(false); // State for QR code modal
     const [id, setId] = useState();
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    
 
     useEffect(() => {
         if (activeTab === 'home'){
@@ -47,7 +49,7 @@ export default function Home() {
     //setting showing
     const toggleSettings = () => {
         setShowSettings(prevState => !prevState);
-        setActiveTab('home');
+        
     };
 
     const fetchUserData = async () => {
@@ -125,6 +127,7 @@ export default function Home() {
                         if (response.status === 200) {
                             await AsyncStorage.removeItem('accessToken');
                             await AsyncStorage.removeItem('refreshToken');
+                            await AsyncStorage.removeItem('chatMessages');
                         }
                         // Remove the access token and refresh token from AsyncStorage
 
@@ -133,13 +136,19 @@ export default function Home() {
                         navigation.navigate('Login');
                         Alert.alert('Signed Out', 'You have been logged out successfully');
                     } catch (error) {
-                        // Handle any errors that may occur during logout
+                        // Handle any errors that may occur during logou
+                        console.error(error);
                         Alert.alert('Error', 'Failed to log out.');
                     }
                 } 
             },
         ]);
     };
+
+    const toggleChat = () => {
+        setIsChatOpen((prev) => !prev);
+    };
+
     const handleGenerateQRCode = async () => {
         setLoading(true);
         try {
@@ -258,7 +267,7 @@ const renderMarket = ({ item }) => {
         <View style={styles.container}>
             {/* Header Section */}
             <View style={styles.header}>
-                <Image source={require('../assets/rewardhub-high-resolution-logo__2_-removebg-preview.png')} style={styles.logo} />
+                <Image source={require('../assets/rewardhub-high-resolution-logo__2_-removebg-preview-2.png')} style={styles.logo} />
                 <View style={styles.headerActions}>
                     <TouchableOpacity onPress={toggleSettings}>
                         <Vector name="settings" size={24} color="#fff" />
@@ -331,19 +340,19 @@ const renderMarket = ({ item }) => {
                         Transactions
                     </Text>
                 </TouchableOpacity>
-                <TouchableOpacity
+                {/* <TouchableOpacity
                     style={styles.footerButton}
                     onPress={handleGenerateQRCode}
                     >
                         <Icon name="qrcode" size={24} color={showQRCodeModal == true ? '#4caf50' : '#999'} />
                     <Text style={[styles.footerText]}>qrcode</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
                 <TouchableOpacity onPress={() => 
                     {setActiveTab('markets');
                     setShowSettings(false);}} style={styles.footerButton}>
                     <Icon name="store" size={24} color={activeTab === 'markets' ? '#4caf50' : '#999'} />
                     <Text style={[styles.footerText, activeTab === 'markets' && styles.activeText]}>
-                        Stores
+                        Vendors
                     </Text>
                 </TouchableOpacity>
             </View>

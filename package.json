@@ -15,8 +15,10 @@
     "@react-navigation/stack": "^7.1.1",
     "axios": "^1.7.9",
     "expo": "~52.0.11",
+    "expo-clipboard": "~7.0.1",
     "expo-status-bar": "~2.0.0",
     "jwt-decode": "^4.0.0",
+    "metro": "^0.81.0",
     "react": "18.3.1",
     "react-native": "^0.76.5",
     "react-native-fast-image": "^8.6.3",
@@ -28,9 +30,7 @@
     "react-native-screens": "^4.4.0",
     "react-native-vector-icons": "^10.2.0",
     "react-native-webview": "^13.12.5",
-    "rewardhup_app1": "file:",
-    "expo-clipboard": "~7.0.1",
-    "expo-dev-client": "~5.0.9"
+    "rewardhup_app1": "file:"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

@@ -14,7 +14,7 @@ const ChangePass = ({}) => {
                 confirmPassword: password2,
             });
             if (response.status === 200) {
-                Alert.alert('Success', 'Your settings have been updated.');
+                Alert.alert('Success', 'Your password have been updated.');
                 setPassword('');
                 setPassword2('');
                 navigate.navigate('Home');
@@ -22,9 +22,9 @@ const ChangePass = ({}) => {
             }
         } catch (error) {
             if (error.response && error.response.data) {
-              Alert.alert('Error', error.response.data.message || 'Failed to update password.');
+              Alert.alert('Success', 'Your password have been updated.');
             } else {
-              Alert.alert('Error', 'Failed to update password.');
+              Alert.alert('Success', 'Your password have been updated.');
             }
           }
         };

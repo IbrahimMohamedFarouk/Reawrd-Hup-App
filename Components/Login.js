@@ -24,7 +24,7 @@ export default function Login({ navigation }) {
         }
 
         setLoading(true); // Start loading indicator
-        navigation.navigate('Home');
+
         try {
             console.log('Logging in...');
             if (userName) 
@@ -71,7 +71,7 @@ export default function Login({ navigation }) {
     return (
         <SafeAreaView style={styles.container}>
             <Image
-                source={require('../assets/rewardhub-high-resolution-logo__2_-removebg-preview.png')}
+                source={require('../assets/rewardhub-high-resolution-logo__2_-removebg-preview-2.png')}
                 style={styles.image}
             />
             <View>
